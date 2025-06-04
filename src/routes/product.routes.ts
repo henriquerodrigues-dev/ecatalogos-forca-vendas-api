@@ -6,23 +6,19 @@ import { ProductDTO } from '../models/ProductDTO';
 const router = Router();
 const productController = new ProductController();
 
-// 📊 Extras - rotas específicas primeiro
-router.get('/count', productController.count);         // 🔢 Contagem total
-router.get('/filters', productController.filters);     // 🔍 Filtros com contadores
+// Rotas de consultas específicas
+router.get('/count', productController.count);         // Contagem total de produtos
+router.get('/filters', productController.filters);     // Filtros disponíveis com contadores
 
-// 🗑️ Soft Deleted
-router.get('/deleted', productController.listDeleted);
-router.get('/deleted/:id', productController.getDeleted);
+// Rotas para produtos deletados (soft delete)
+router.get('/deleted', productController.listDeleted); // Lista paginada de deletados
+router.get('/deleted/:id', productController.getDeleted); // Busca deletado por ID
 
-// 📦 CRUD Principal
-router.get('/', productController.list);
-router.get('/:id', productController.get);
-router.post('/', validateDTO(ProductDTO), productController.create);
-router.put('/:id', validateDTO(ProductDTO), productController.update);
-router.delete('/:id', productController.delete);
-
-// Rotas opcionais para produtos deletados
-router.get('/products/deleted', productController.listDeleted.bind(productController));
-router.get('/products/deleted/:id', productController.getDeleted.bind(productController));
+// Rotas principais CRUD
+router.get('/', productController.list);               // Listagem geral
+router.get('/:id', productController.get);             // Busca por ID
+router.post('/', validateDTO(ProductDTO), productController.create); // Criação
+router.put('/:id', validateDTO(ProductDTO), productController.update); // Atualização
+router.delete('/:id', productController.delete);       // Exclusão (soft delete)
 
 export default router;
