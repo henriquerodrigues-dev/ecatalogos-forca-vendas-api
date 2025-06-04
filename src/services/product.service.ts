@@ -231,7 +231,7 @@ class ProductService {
    * Usa queries SQL brutas para obter contagens e agrupamentos complexos.
    */
   async filters() {
-    const brands = await prisma.$queryRaw`
+    const brandsRaw = await prisma.$queryRaw<any[]>`
       SELECT 
         b.id, 
         b.name, 
@@ -243,6 +243,12 @@ class ProductService {
       GROUP BY 
         b.id, b.name
     `;
+
+    const brands = brandsRaw.map(b => ({
+      id: b.id,
+      name: b.name,
+      quantity: Number(b.quantity)
+    }));
 
     const rawCategories = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
@@ -285,33 +291,36 @@ class ProductService {
       name: cat.name,
       quantity: Number(cat.quantity),
       subcategories: typeof cat.subcategories === 'string'
-        ? JSON.parse(cat.subcategories)
-        : cat.subcategories ?? []
+        ? JSON.parse(cat.subcategories).map((sub: any) => ({
+            ...sub,
+            quantity: Number(sub.quantity)
+          }))
+        : []
     }));
 
     const typesRaw = await prisma.products.groupBy({
       by: ['type'],
       where: { deleted_at: null },
-      _count: true
+      _count: { _all: true }
     });
     const types = typesRaw.map(t => ({
       name: t.type,
-      quantity: t._count
+      quantity: Number(t._count._all)
     }));
 
     const gendersRaw = await prisma.products.groupBy({
       by: ['gender'],
       where: { deleted_at: null },
-      _count: true
+      _count: { _all: true }
     });
     const genders = gendersRaw.map(g => ({
-      name: g.gender,
-      quantity: g._count
+      name: g.gender?.toLowerCase().replace(/^\w/, c => c.toUpperCase()),
+      quantity: Number(g._count._all)
     }));
 
     const promptDelivery = {
-      true: await prisma.products.count({ where: { prompt_delivery: true, deleted_at: null } }),
-      false: await prisma.products.count({ where: { prompt_delivery: false, deleted_at: null } }),
+      true: Number(await prisma.products.count({ where: { prompt_delivery: true, deleted_at: null } })),
+      false: Number(await prisma.products.count({ where: { prompt_delivery: false, deleted_at: null } }))
     };
 
     return {
