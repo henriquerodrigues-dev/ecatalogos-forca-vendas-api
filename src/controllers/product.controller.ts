@@ -159,7 +159,7 @@ export class ProductController {
    */
   async filters(req: Request, res: Response) {
     try {
-      const filtros = await productService.filters();
+      const filtros = await productService.filters(); // sem ID
       res.json(filtros);
     } catch (error) {
       console.error('Erro ao obter filtros:', error);

@@ -72,9 +72,7 @@ class ProductService {
             skus: {
               include: {
                 price_tables_skus: {
-                  include: {
-                    price_tables: true
-                  }
+                  include: { price_tables: true }
                 }
               }
             }
@@ -233,7 +231,6 @@ class ProductService {
    * Usa queries SQL brutas para obter contagens e agrupamentos complexos.
    */
   async filters() {
-    // Busca marcas com contagem de produtos ativos
     const brands = await prisma.$queryRaw`
       SELECT 
         b.id, 
@@ -247,8 +244,7 @@ class ProductService {
         b.id, b.name
     `;
 
-    // Busca categorias com suas subcategorias e contagem de produtos ativos
-    const categories = await prisma.$queryRaw`
+    const rawCategories = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
         c.id,
         c.name,
@@ -257,19 +253,25 @@ class ProductService {
           SELECT 
             JSON_ARRAYAGG(
               JSON_OBJECT(
-                'id', sc.id,
-                'name', sc.name,
-                'quantity', COUNT(scp.id)
+                'id', sub.id,
+                'name', sub.name,
+                'quantity', sub.quantity
               )
             )
-          FROM 
-            subcategories sc
-          LEFT JOIN 
-            products scp ON sc.id = scp.subcategory_id AND scp.deleted_at IS NULL
-          WHERE 
-            sc.category_id = c.id
-          GROUP BY 
-            sc.id, sc.name
+          FROM (
+            SELECT 
+              sc.id,
+              sc.name,
+              COUNT(scp.id) as quantity
+            FROM 
+              subcategories sc
+            LEFT JOIN 
+              products scp ON sc.id = scp.subcategory_id AND scp.deleted_at IS NULL
+            WHERE 
+              sc.category_id = c.id
+            GROUP BY 
+              sc.id, sc.name
+          ) AS sub
         ) as subcategories
       FROM 
         categories c
@@ -277,26 +279,39 @@ class ProductService {
         products p ON c.id = p.category_id AND p.deleted_at IS NULL
       GROUP BY 
         c.id, c.name
-    `;
+    `);
 
-    // Contagem por tipo de produto
-    const types = await prisma.products.groupBy({
+    const categories = rawCategories.map((cat: any) => ({
+      name: cat.name,
+      quantity: Number(cat.quantity),
+      subcategories: typeof cat.subcategories === 'string'
+        ? JSON.parse(cat.subcategories)
+        : cat.subcategories ?? []
+    }));
+
+    const typesRaw = await prisma.products.groupBy({
       by: ['type'],
       where: { deleted_at: null },
       _count: true
     });
+    const types = typesRaw.map(t => ({
+      name: t.type,
+      quantity: t._count
+    }));
 
-    // Contagem por gênero do produto
-    const genders = await prisma.products.groupBy({
+    const gendersRaw = await prisma.products.groupBy({
       by: ['gender'],
       where: { deleted_at: null },
       _count: true
     });
+    const genders = gendersRaw.map(g => ({
+      name: g.gender,
+      quantity: g._count
+    }));
 
-    // Contagem de produtos com prompt_delivery true/false
     const promptDelivery = {
       true: await prisma.products.count({ where: { prompt_delivery: true, deleted_at: null } }),
-      false: await prisma.products.count({ where: { prompt_delivery: false, deleted_at: null } })
+      false: await prisma.products.count({ where: { prompt_delivery: false, deleted_at: null } }),
     };
 
     return {
