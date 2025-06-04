@@ -231,6 +231,15 @@ class ProductService {
    * Usa queries SQL brutas para obter contagens e agrupamentos complexos.
    */
   async filters() {
+    // Função para capitalizar cada palavra
+    function capitalizeWords(str: string) {
+      return str
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
     const brandsRaw = await prisma.$queryRaw<any[]>`
       SELECT 
         b.id, 
@@ -246,7 +255,7 @@ class ProductService {
 
     const brands = brandsRaw.map(b => ({
       id: b.id,
-      name: b.name,
+      name: capitalizeWords(b.name),
       quantity: Number(b.quantity)
     }));
 
@@ -288,11 +297,11 @@ class ProductService {
     `);
 
     const categories = rawCategories.map((cat: any) => ({
-      name: cat.name,
+      name: capitalizeWords(cat.name),
       quantity: Number(cat.quantity),
       subcategories: typeof cat.subcategories === 'string'
         ? JSON.parse(cat.subcategories).map((sub: any) => ({
-            ...sub,
+            name: capitalizeWords(sub.name),
             quantity: Number(sub.quantity)
           }))
         : []
@@ -304,7 +313,7 @@ class ProductService {
       _count: { _all: true }
     });
     const types = typesRaw.map(t => ({
-      name: t.type,
+      name: capitalizeWords(t.type),
       quantity: Number(t._count._all)
     }));
 
@@ -314,7 +323,7 @@ class ProductService {
       _count: { _all: true }
     });
     const genders = gendersRaw.map(g => ({
-      name: g.gender?.toLowerCase().replace(/^\w/, c => c.toUpperCase()),
+      name: capitalizeWords(g.gender ?? ''),
       quantity: Number(g._count._all)
     }));
 
