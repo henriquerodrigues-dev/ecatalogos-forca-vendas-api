@@ -21,4 +21,8 @@ router.post('/', validateDTO(ProductDTO), productController.create);
 router.put('/:id', validateDTO(ProductDTO), productController.update);
 router.delete('/:id', productController.delete);
 
+// Rotas opcionais para produtos deletados
+router.get('/products/deleted', productController.listDeleted.bind(productController));
+router.get('/products/deleted/:id', productController.getDeleted.bind(productController));
+
 export default router;
