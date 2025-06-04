@@ -9,14 +9,14 @@ class ProductService {
   async list(query: any) {
     const { page = 1, limit = 10, search } = query;
 
-    // Condição para busca (filtro por nome e descrição)
+    // Filtro inicial (produtos ativos com variantes e SKUs com pelo menos uma price table)
     const where = {
-      deleted_at: null, // produtos não deletados
+      deleted_at: null,
       variants: {
         some: {
           skus: {
             every: {
-              price_tables_skus: { some: {} } // Garante que cada SKU tem pelo menos um price_table associado
+              price_tables_skus: { some: {} }
             }
           }
         }
@@ -29,12 +29,15 @@ class ProductService {
       })
     };
 
-    // Busca produtos com paginação e inclui relacionamentos importantes
+    // Busca os produtos e suas variantes/relacionamentos
     const products = await prisma.products.findMany({
       where,
       skip: (page - 1) * Number(limit),
       take: Number(limit),
       include: {
+        brands: true,
+        categories: true,
+        subcategories: true,
         variants: {
           include: {
             skus: {
@@ -51,7 +54,29 @@ class ProductService {
       }
     });
 
-    return products;
+    // Aplica o filtro de variante: apenas aquelas com todos os SKUs vinculados à mesma tabela de preço
+    const filteredProducts = products
+      .map(product => {
+        const filteredVariants = product.variants.filter(variant => {
+          const skuTables = variant.skus.map(sku =>
+            sku.price_tables_skus.map(pt => pt.price_table_id).sort()
+          );
+
+          // Verifica se todas as listas de tabelas são iguais
+          const first = JSON.stringify(skuTables[0]);
+          const allSame = skuTables.every(tables => JSON.stringify(tables) === first);
+
+          return allSame && skuTables[0]?.length > 0;
+        });
+
+        return {
+          ...product,
+          variants: filteredVariants
+        };
+      })
+      .filter(product => product.variants.length > 0);
+
+    return filteredProducts;
   }
 
   /**
@@ -221,7 +246,7 @@ class ProductService {
           { description: { contains: search, mode: 'insensitive' } }
         ]
       })
-    };
+    };''
 
     return prisma.products.count({ where });
   }
