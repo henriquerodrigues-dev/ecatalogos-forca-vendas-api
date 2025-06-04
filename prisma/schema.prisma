@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model brands {
+  id                     Int        @id @default(autoincrement())
+  name                   String     @db.VarChar(45)
+  logo_img               String?    @db.VarChar(255)
+  min_value              Decimal    @default(0.00) @db.Decimal(10, 2)
+  min_installments_value Decimal    @default(0.00) @db.Decimal(10, 2)
+  visible                Boolean?   @default(true)
+  sku_order              String?    @db.VarChar(255)
+  address_id             Int?       @unique
+  business_id            Int
+  company_id             Int
+  created_at             DateTime   @default(now())
+  updated_at             DateTime?
+  deleted_at             DateTime?
+  products               products[]
+
+  @@unique([name, company_id])
+  @@index([business_id], map: "brands_business_id_fkey")
+  @@index([company_id], map: "brands_company_id_fkey")
+}
+
+model categories {
+  id            Int             @id @default(autoincrement()) @db.UnsignedInt
+  name          String          @db.VarChar(37)
+  created_at    DateTime?       @default(now()) @db.Timestamp(0)
+  company_id    Int
+  products      products[]
+  subcategories subcategories[]
+
+  @@unique([name, company_id])
+  @@index([company_id], map: "categories_company_id_fkey")
+}
+
+model price_tables {
+  id                Int                 @id @default(autoincrement())
+  description       String              @db.VarChar(255)
+  price_adjustment  Decimal             @default(1.0000) @db.Decimal(5, 4)
+  minimum_value     Decimal             @db.Decimal(10, 2)
+  visible           Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?           @db.Timestamp(0)
+  deleted_at        DateTime?           @db.Timestamp(0)
+  company_id        Int
+  price_tables_skus price_tables_skus[]
+
+  @@index([company_id], map: "price_table_company_id_fkey")
+}
+
+model price_tables_skus {
+  id             Int          @id @default(autoincrement())
+  price          Decimal      @default(0.00) @db.Decimal(10, 2)
+  created_at     DateTime     @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?    @db.Timestamp(0)
+  sku_id         Int
+  price_table_id Int
+  price_tables   price_tables @relation(fields: [price_table_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_price_table")
+  skus           skus         @relation(fields: [sku_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_price_table_sku")
+
+  @@unique([sku_id, price_table_id], map: "unique_sku_price_table")
+  @@index([price_table_id], map: "fk_price_table")
+}
+
+model products {
+  id                    Int             @id @default(autoincrement())
+  name                  String          @db.VarChar(255)
+  reference             String          @db.VarChar(30)
+  type                  products_type
+  gender                products_gender
+  prompt_delivery       Boolean
+  description           String?         @db.VarChar(255)
+  company_id            Int
+  erp_id                String?         @db.VarChar(37)
+  brand_id              Int
+  deadline_id           Int?
+  created_at            DateTime        @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?       @db.Timestamp(0)
+  deleted_at            DateTime?       @db.Timestamp(0)
+  category_id           Int             @db.UnsignedInt
+  subcategory_id        Int?            @db.UnsignedInt
+  category_order        Int?            @default(0) @db.TinyInt
+  composition_data      String?         @db.VarChar(255)
+  technical_information String?         @db.VarChar(255)
+  open_grid             Boolean         @default(false)
+  ipi                   Decimal         @default(0.0000) @db.Decimal(5, 4)
+  is_discontinued       Boolean         @default(false)
+  is_launch             Boolean         @default(false)
+  is_visible            Boolean         @default(true)
+  colection             String?         @db.VarChar(255)
+  st                    Decimal         @default(0.0000) @db.Decimal(5, 4)
+  brands                brands          @relation(fields: [brand_id], references: [id], onDelete: Cascade, map: "fk_brands_company")
+  categories            categories      @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "fk_categories_products")
+  subcategories         subcategories?  @relation(fields: [subcategory_id], references: [id], onDelete: Cascade, map: "fk_subcategories_products")
+  variants              variants[]
+
+  @@unique([erp_id, company_id], map: "products_erpId_companyId_key")
+  @@index([category_id], map: "fk_categories_products")
+  @@index([subcategory_id], map: "fk_subcategories_products")
+  @@index([brand_id], map: "products_brandId_fkey")
+  @@index([company_id], map: "products_companyId_fkey")
+  @@index([deadline_id], map: "products_deadlineId_fkey")
+}
+
+model skus {
+  id                Int                 @id @default(autoincrement())
+  size              String              @db.VarChar(10)
+  stock             Int
+  price             Decimal             @db.Decimal(10, 2)
+  code              String              @db.VarChar(13)
+  min_quantity      Int?                @default(1)
+  multiple_quantity Int
+  erpId             String?             @unique @db.VarChar(50)
+  variant_id        Int
+  cest              String?             @db.VarChar(50)
+  height            Float?
+  length            Float?
+  ncm               String?             @db.VarChar(50)
+  weight            Float?
+  width             Float?
+  created_at        DateTime            @default(now()) @db.DateTime(0)
+  updated_at        DateTime?           @db.DateTime(0)
+  deleted_at        DateTime?           @db.DateTime(0)
+  price_tables_skus price_tables_skus[]
+  variants          variants            @relation(fields: [variant_id], references: [id], onDelete: NoAction)
+
+  @@index([variant_id], map: "skus_variant_id_fkey")
+}
+
+model subcategories {
+  id          Int        @id @default(autoincrement()) @db.UnsignedInt
+  name        String     @db.VarChar(37)
+  category_id Int        @db.UnsignedInt
+  created_at  DateTime?  @default(now()) @db.Timestamp(0)
+  products    products[]
+  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "fk_subcategories_categories")
+
+  @@unique([name, category_id])
+  @@index([category_id], map: "fk_subcategories_categories")
+}
+
+model variants {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  hex_code   String?   @db.VarChar(7)
+  product_id Int
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  deleted_at DateTime? @db.Timestamp(0)
+  skus       skus[]
+  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, map: "fk_variants_products")
+
+  @@unique([name, product_id], map: "unique_variant_name_product_id")
+  @@index([product_id], map: "fk_variants_products")
+}
+
+enum products_type {
+  NACIONAL
+  IMPORTADO
+}
+
+enum products_gender {
+  MASCULINO
+  FEMININO
+  INFANTIL
+  JUVENIL
+  UNISSEX
+  FAT
+  OUTRO
+}

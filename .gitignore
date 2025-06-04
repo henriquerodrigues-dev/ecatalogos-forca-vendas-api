@@ -35,3 +35,4 @@ logs/
 
 # Coverage (caso use Jest/Vitest)
 coverage/
+/generated/prisma
