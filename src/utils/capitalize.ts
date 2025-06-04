@@ -1,3 +1,8 @@
+/**
+ * Capitaliza a primeira letra de cada palavra em uma string,
+ * convertendo o restante das letras para minúsculas.
+ * Exemplo: "joHN doE" => "John Doe"
+ */
 export function capitalizeWords(str: string) {
   return str
     .toLowerCase()

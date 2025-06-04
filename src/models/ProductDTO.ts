@@ -1,17 +1,13 @@
 import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-/**
- * Enumeração para tipos de produto
- */
+/** Tipos possíveis de produto */
 export enum ProductType {
   NACIONAL = 'NACIONAL',
   IMPORTADO = 'IMPORTADO'
 }
 
-/**
- * Enumeração para gêneros de produto
- */
+/** Gêneros possíveis para o produto */
 export enum ProductGender {
   MASCULINO = 'MASCULINO',
   FEMININO = 'FEMININO',
@@ -22,59 +18,51 @@ export enum ProductGender {
   OUTRO = 'OUTRO'
 }
 
-/**
- * DTO para criação/atualização de SKUs
- */
+/** DTO para criação/atualização de SKU */
 export class SKUCreateDTO {
   @IsOptional()
-  id?: number; // Usado para atualização, pode estar ausente na criação
+  id?: number; // ID para atualização, opcional na criação
 
   @IsString()
   @IsNotEmpty()
-  size: string; // Tamanho do SKU (ex: P, M, G)
+  size: string; // Tamanho (ex: P, M, G)
 
   @IsNumber()
   stock: number; // Quantidade em estoque
 
   @IsNumber()
-  price: number; // Preço do SKU
+  price: number; // Preço
 
   @IsString()
   @IsNotEmpty()
-  code: string; // Código SKU único
+  code: string; // Código único do SKU
 
   @IsOptional()
   @IsNumber()
   min_quantity?: number; // Quantidade mínima para compra (opcional)
 
   @IsNumber()
-  multiple_quantity: number; // Múltiplo de quantidade (ex: 1, 5, 10)
-
-  // Pode adicionar mais campos conforme necessidade
+  multiple_quantity: number; // Quantidade múltipla para compra
 }
 
-/**
- * DTO para variantes de produtos (ex: cores, estilos)
- */
+/** DTO para variantes do produto (ex: cores, estilos) */
 export class VariantDTO {
   @IsOptional()
-  id?: number; // Para atualização, opcional
+  id?: number; // ID para atualização, opcional
 
   @IsString()
   @IsNotEmpty()
-  name: string; // Nome da variante (ex: Vermelho, Azul)
+  name: string; // Nome da variante
 
   @IsOptional()
   hex_code?: string; // Código hexadecimal da cor (opcional)
 
   @ValidateNested({ each: true })
   @Type(() => SKUCreateDTO)
-  skus: SKUCreateDTO[]; // Lista de SKUs para esta variante
+  skus: SKUCreateDTO[]; // Lista de SKUs da variante
 }
 
-/**
- * DTO principal para criação/atualização de produtos
- */
+/** DTO principal para criação/atualização de produto */
 export class ProductDTO {
   @IsString()
   @IsNotEmpty()
@@ -82,32 +70,30 @@ export class ProductDTO {
 
   @IsString()
   @IsNotEmpty()
-  reference: string; // Referência do produto (SKU global, código interno)
+  reference: string; // Referência interna ou SKU global
 
   @IsEnum(ProductType)
-  type: ProductType; // Tipo do produto (nacional/importado)
+  type: ProductType; // Tipo do produto
 
   @IsEnum(ProductGender)
   gender: ProductGender; // Gênero do produto
 
   @IsNotEmpty()
-  prompt_delivery: boolean; // Indica se tem entrega rápida (true/false)
+  prompt_delivery: boolean; // Indica entrega rápida
 
   @IsNumber()
-  company_id: number; // ID da empresa dona do produto
+  company_id: number; // Empresa dona do produto
 
   @IsNumber()
-  brand_id: number; // ID da marca
+  brand_id: number; // Marca do produto
 
   @IsNumber()
-  category_id: number; // ID da categoria
+  category_id: number; // Categoria
 
   @IsOptional()
-  subcategory_id?: number; // ID da subcategoria (opcional)
-
-  // Pode adicionar outros campos com validações conforme necessário
+  subcategory_id?: number; // Subcategoria (opcional)
 
   @ValidateNested({ each: true })
   @Type(() => VariantDTO)
-  variants: VariantDTO[]; // Lista de variantes do produto
+  variants: VariantDTO[]; // Variantes do produto
 }

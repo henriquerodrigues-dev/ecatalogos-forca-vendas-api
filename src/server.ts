@@ -18,6 +18,20 @@ app.listen(PORT, () => {
   console.log(`✅ Servidor iniciado com sucesso!`);
   console.log(`🌐 Ambiente: ${ENV}`);
   console.log(`🚀 API disponível em: http://localhost:${PORT}`);
+
+  console.log('\n🔧 Para testar a API, recomendamos usar o Postman: https://www.postman.com/downloads/');
+  
+  console.log('\n📚 Rotas disponíveis:\n');
+
+  console.table([
+    { Método: 'GET', Rota: '/products', Descrição: 'Listar produtos com filtros, query params e paginação' },
+    { Método: 'GET', Rota: '/products/:id', Descrição: 'Buscar detalhes de um produto' },
+    { Método: 'POST', Rota: '/products', Descrição: 'Criar novo produto e suas variantes/skus' },
+    { Método: 'PUT', Rota: '/products/:id', Descrição: 'Atualizar produto (inclusive variantes/skus)' },
+    { Método: 'DELETE', Rota: '/products/:id', Descrição: 'Soft delete → setar campo deleted_at com a data atual' },
+    { Método: 'GET', Rota: '/products/deleted', Descrição: 'Listagem de produtos deletados (soft deleted)' },
+    { Método: 'GET', Rota: '/products/deleted/:id', Descrição: 'Buscar um único produto deletado pelo ID (soft deleted)' },
+  ]);
 });
 
 // Tratamento básico de erro ao iniciar servidor

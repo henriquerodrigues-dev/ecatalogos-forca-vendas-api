@@ -1,13 +1,13 @@
 /**
- * @file prismaClient.ts
- * @description Configuração e exportação da instância do Prisma Client
- * para ser utilizada em toda a aplicação para acesso ao banco de dados.
+ * prismaClient.ts
+ * Inicializa e exporta a instância do Prisma Client para uso global na aplicação.
+ * Evita múltiplas instâncias em ambiente de desenvolvimento.
  */
 
 import { PrismaClient } from '../../generated/prisma';
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma?: PrismaClient;
 };
 
 const prisma = globalForPrisma.prisma ?? new PrismaClient({

@@ -1,34 +1,33 @@
 /**
  * app.ts
- * Configuração principal do Express App
- * Define middlewares globais e importa as rotas principais.
+ * Configuração central do Express App.
+ * Define middlewares globais e registra as rotas principais da aplicação.
  */
 
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import productRoutes from "./routes/product.routes"; // Importa rotas de produtos
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import productRoutes from './routes/product.routes';
 
-// Carrega variáveis de ambiente do arquivo .env
+// Carrega as variáveis de ambiente do arquivo .env
 dotenv.config();
 
 const app = express();
 
 // Middlewares globais
 
-// Habilita CORS para permitir requisições de outras origens
+// Permite requisições CORS de qualquer origem
 app.use(cors());
 
-// Middleware para interpretar requisições com JSON no corpo
+// Habilita parsing automático do JSON no corpo das requisições
 app.use(express.json());
 
-// Rota básica de saúde para verificar se a API está online
-app.get("/", (req, res) => {
-  res.status(200).send("API está funcionando!");
+// Rota simples para verificar se a API está ativa
+app.get('/', (_req, res) => {
+  res.status(200).send('API está funcionando!');
 });
 
-// Registra as rotas de produto com o prefixo '/products'
-app.use("/products", productRoutes);
+// Registra rotas relacionadas a produtos com o prefixo '/products'
+app.use('/products', productRoutes);
 
-// Exporta o app para ser usado no servidor principal
 export default app;

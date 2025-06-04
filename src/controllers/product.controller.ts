@@ -1,19 +1,14 @@
 /**
  * product.controller.ts
- * Controlador responsável por receber as requisições HTTP relacionadas a produtos,
- * chamar a camada de serviço para processar a lógica de negócio
- * e devolver respostas apropriadas ao cliente.
+ * Controlador para rotas de produtos.
+ * Encaminha requisições para o serviço e trata respostas HTTP.
  */
 
 import { Request, Response } from 'express';
 import productService from '../services/product.service';
 
 export class ProductController {
-  /**
-   * Lista produtos ativos com filtros e paginação
-   * - Recebe query params para filtro, página e limite
-   * - Retorna lista de produtos com variantes e SKUs
-   */
+  // Lista produtos ativos com filtros e paginação
   async list(req: Request, res: Response) {
     try {
       const produtos = await productService.list(req.query);
@@ -24,15 +19,12 @@ export class ProductController {
     }
   }
 
-  /**
-   * Busca detalhes de um produto ativo pelo ID
-   * - Retorna 404 se não encontrado
-   */
+  // Retorna produto ativo pelo ID, ou 404 se não existir
   async get(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
       if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ message: 'ID do produto inválido' });
+        return res.status(400).json({ message: 'ID inválido' });
       }
 
       const product = await productService.get(id);
@@ -44,15 +36,10 @@ export class ProductController {
     }
   }
 
-  /**
-   * Cria um novo produto
-   * - Valida os dados via middleware antes de chegar aqui
-   * - Retorna o produto criado com status 201
-   */
+  // Cria novo produto
   async create(req: Request, res: Response) {
     try {
-      const data = req.body;
-      const newProduct = await productService.create(data);
+      const newProduct = await productService.create(req.body);
       res.status(201).json(newProduct);
     } catch (error) {
       console.error('Erro ao criar produto:', error);
@@ -60,20 +47,15 @@ export class ProductController {
     }
   }
 
-  /**
-   * Atualiza um produto existente pelo ID
-   * - Retorna 404 se produto não encontrado
-   * - Dados já validados antes via middleware
-   */
+  // Atualiza produto pelo ID, retorna 404 se não encontrado
   async update(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
       if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ message: 'ID do produto inválido' });
+        return res.status(400).json({ message: 'ID inválido' });
       }
 
-      const data = req.body;
-      const updatedProduct = await productService.update(id, data);
+      const updatedProduct = await productService.update(id, req.body);
       if (!updatedProduct) return res.status(404).json({ message: 'Produto não encontrado' });
       res.json(updatedProduct);
     } catch (error) {
@@ -82,10 +64,7 @@ export class ProductController {
     }
   }
 
-  /**
-   * Realiza soft delete no produto pelo ID (seta deleted_at)
-   * - Retorna 404 se produto não encontrado ou já deletado
-   */
+  // Soft delete de produto pelo ID (marca como deletado)
   async delete(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
@@ -98,10 +77,7 @@ export class ProductController {
     }
   }
 
-  /**
-   * Lista produtos que foram soft deletados (apagados logicamente)
-   * - Com paginação e filtros opcionais via query
-   */
+  // Lista produtos soft deletados com paginação
   async listDeleted(req: Request, res: Response) {
     try {
       const products = await productService.listDeleted(req.query);
@@ -112,10 +88,7 @@ export class ProductController {
     }
   }
 
-  /**
-   * Busca produto soft deletado pelo ID
-   * - Retorna 404 se não encontrado
-   */
+  // Busca produto soft deletado pelo ID
   async getDeleted(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
@@ -128,38 +101,21 @@ export class ProductController {
     }
   }
 
-  /**
-   * Conta o total de produtos ativos com filtros opcionais
-   * - Retorna objeto { total: number }
-   */
+  // Retorna total de produtos ativos
   async count(req: Request, res: Response) {
     try {
-      const count = await prisma.products.count({
-        where: {
-          deleted_at: null, // conte apenas os ativos
-        },
-      });
-
+      const count = await productService.count(req.query);
       res.json({ count });
     } catch (error) {
       console.error('Erro ao contar produtos:', error);
-      res.status(500).json({
-        message: 'Erro ao contar produtos',
-        error: {
-          name: error?.name,
-          message: error?.message,
-        },
-      });
+      res.status(500).json({ message: 'Erro ao contar produtos', error });
     }
   }
 
-  /**
-   * Retorna filtros e contadores para UI
-   * - Dados agregados de marcas, categorias, tipos, gêneros, prompt_delivery
-   */
+  // Retorna dados agregados para filtros na UI
   async filters(req: Request, res: Response) {
     try {
-      const filtros = await productService.filters(); // sem ID
+      const filtros = await productService.filters();
       res.json(filtros);
     } catch (error) {
       console.error('Erro ao obter filtros:', error);

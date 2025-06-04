@@ -3,6 +3,10 @@ import { getPaginationParams } from '../utils/pagination';
 import { capitalizeWords } from '../utils/capitalize';
 
 class ProductService {
+  /**
+   * Lista produtos ativos com paginação, filtro de busca e variantes com SKUs e price tables.
+   * Filtra variantes que possuem SKUs com price tables consistentes.
+   */
   async list(query: any) {
     const { page = 1, limit = 10, search } = query;
     const { skip, take } = getPaginationParams(page, limit);
@@ -50,6 +54,7 @@ class ProductService {
       }
     });
 
+    // Filtra variantes para garantir que todos os SKUs possuem price_tables_skus idênticos
     const filteredProducts = products
       .map(product => {
         const filteredVariants = product.variants.filter(variant => {
@@ -71,19 +76,19 @@ class ProductService {
     return filteredProducts;
   }
 
+  /** Lista produtos soft deletados com paginação */
   async listDeleted(query: any) {
     const { page = 1, limit = 10 } = query;
     const { skip, take } = getPaginationParams(page, limit);
 
     return prisma.products.findMany({
-      where: {
-        NOT: { deleted_at: null }
-      },
+      where: { NOT: { deleted_at: null } },
       skip,
       take
     });
   }
 
+  /** Busca produto ativo pelo ID */
   async get(id: number) {
     if (!id) throw new Error('ID do produto é obrigatório');
 
@@ -97,9 +102,7 @@ class ProductService {
           include: {
             skus: {
               include: {
-                price_tables_skus: {
-                  include: { price_tables: true }
-                }
+                price_tables_skus: { include: { price_tables: true } }
               }
             }
           }
@@ -108,10 +111,11 @@ class ProductService {
     });
   }
 
+  /** Cria produto com variantes e SKUs aninhados */
   async create(data: any) {
     const { variants, ...productData } = data;
 
-    const createdProduct = await prisma.products.create({
+    return prisma.products.create({
       data: {
         ...productData,
         variants: {
@@ -119,18 +123,15 @@ class ProductService {
             name: variant.name,
             hex_code: variant.hex_code,
             skus: {
-              create: variant.skus.map((sku: any) => ({
-                ...sku
-              }))
+              create: variant.skus.map((sku: any) => ({ ...sku }))
             }
           })) || []
         }
       }
     });
-
-    return createdProduct;
   }
 
+  /** Atualiza produto e suas variantes (substitui variantes atuais) */
   async update(id: number, data: any) {
     const productExists = await prisma.products.findFirst({
       where: { id, deleted_at: null }
@@ -145,8 +146,10 @@ class ProductService {
     });
 
     if (variants) {
+      // Remove variantes antigas
       await prisma.variants.deleteMany({ where: { product_id: id } });
 
+      // Cria variantes novas
       for (const variant of variants) {
         await prisma.variants.create({
           data: {
@@ -154,9 +157,7 @@ class ProductService {
             hex_code: variant.hex_code,
             product_id: id,
             skus: {
-              create: variant.skus.map((sku: any) => ({
-                ...sku
-              }))
+              create: variant.skus.map((sku: any) => ({ ...sku }))
             }
           }
         });
@@ -166,6 +167,7 @@ class ProductService {
     return updatedProduct;
   }
 
+  /** Marca produto como deletado (soft delete) */
   async softDelete(id: number) {
     const productExists = await prisma.products.findFirst({
       where: { id, deleted_at: null }
@@ -176,15 +178,18 @@ class ProductService {
       where: { id },
       data: { deleted_at: new Date() }
     });
+
     return true;
   }
 
+  /** Busca produto soft deletado pelo ID */
   async getDeleted(id: number) {
     return prisma.products.findFirst({
       where: { id, NOT: { deleted_at: null } }
     });
   }
 
+  /** Conta produtos ativos com filtro de busca */
   async count(query: any = {}) {
     const { search } = query;
 
@@ -210,26 +215,28 @@ class ProductService {
     return prisma.products.count({ where });
   }
 
+  /**
+   * Retorna dados agregados para filtros da UI:
+   * - marcas, categorias (com subcategorias), tipos, gêneros e prompt_delivery
+   */
   async filters() {
+    // Agrega marcas e contagem de produtos ativos
     const brandsRaw = await prisma.$queryRaw<any[]>`
       SELECT 
         b.id, 
         b.name, 
         COUNT(p.id) as quantity
-      FROM 
-        brands b
-      LEFT JOIN 
-        products p ON b.id = p.brand_id AND p.deleted_at IS NULL
-      GROUP BY 
-        b.id, b.name
+      FROM brands b
+      LEFT JOIN products p ON b.id = p.brand_id AND p.deleted_at IS NULL
+      GROUP BY b.id, b.name
     `;
-
     const brands = brandsRaw.map(b => ({
       id: b.id,
       name: capitalizeWords(b.name),
       quantity: Number(b.quantity)
     }));
 
+    // Agrega categorias e subcategorias com contagem de produtos ativos
     const rawCategories = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
         c.id,
@@ -249,22 +256,15 @@ class ProductService {
               sc.id,
               sc.name,
               COUNT(scp.id) as quantity
-            FROM 
-              subcategories sc
-            LEFT JOIN 
-              products scp ON sc.id = scp.subcategory_id AND scp.deleted_at IS NULL
-            WHERE 
-              sc.category_id = c.id
-            GROUP BY 
-              sc.id, sc.name
+            FROM subcategories sc
+            LEFT JOIN products scp ON sc.id = scp.subcategory_id AND scp.deleted_at IS NULL
+            WHERE sc.category_id = c.id
+            GROUP BY sc.id, sc.name
           ) AS sub
         ) as subcategories
-      FROM 
-        categories c
-      LEFT JOIN 
-        products p ON c.id = p.category_id AND p.deleted_at IS NULL
-      GROUP BY 
-        c.id, c.name
+      FROM categories c
+      LEFT JOIN products p ON c.id = p.category_id AND p.deleted_at IS NULL
+      GROUP BY c.id, c.name
     `);
 
     const categories = rawCategories.map((cat: any) => ({
@@ -278,6 +278,7 @@ class ProductService {
         : []
     }));
 
+    // Agrega tipos de produtos ativos
     const typesRaw = await prisma.products.groupBy({
       by: ['type'],
       where: { deleted_at: null },
@@ -288,6 +289,7 @@ class ProductService {
       quantity: Number(t._count._all)
     }));
 
+    // Agrega gêneros de produtos ativos
     const gendersRaw = await prisma.products.groupBy({
       by: ['gender'],
       where: { deleted_at: null },
@@ -298,6 +300,7 @@ class ProductService {
       quantity: Number(g._count._all)
     }));
 
+    // Contagem por prompt_delivery (true/false)
     const promptDelivery = {
       true: Number(await prisma.products.count({ where: { prompt_delivery: true, deleted_at: null } })),
       false: Number(await prisma.products.count({ where: { prompt_delivery: false, deleted_at: null } }))

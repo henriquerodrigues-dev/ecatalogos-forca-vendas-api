@@ -1,21 +1,31 @@
 {
   "name": "ecatalogos-forca-vendas-api",
   "version": "1.0.0",
-  "description": "API para gestão de catálogo de produtos para força de vendas",
-  "main": "index.js",
+  "description": "API para gerenciamento de catálogo de produtos para força de vendas, com funcionalidades de CRUD, filtros e soft delete.",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --project tsconfig.json src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/henriquerodrigues-dev/ecatalogos-forca-vendas-api.git"
+    "url": "https://github.com/henriquerodrigues-dev/ecatalogos-forca-vendas-api.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "api",
+    "express",
+    "typescript",
+    "prisma",
+    "catalog",
+    "product-management",
+    "sales-force"
+  ],
+  "author": "Henrique Rodrigues <https://github.com/henriquerodrigues-dev>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/henriquerodrigues-dev/ecatalogos-forca-vendas-api/issues"
@@ -36,6 +46,8 @@
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.29",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.0"
   }
 }
