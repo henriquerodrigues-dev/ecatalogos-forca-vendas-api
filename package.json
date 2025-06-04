@@ -1,9 +1,14 @@
 {
   "name": "ecatalogos-forca-vendas-api",
   "version": "1.0.0",
+  "description": "API para gestão de catálogo de produtos para força de vendas",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "ts-node-dev --respawn --transpile-only --project tsconfig.json src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
   },
   "repository": {
     "type": "git",
@@ -16,7 +21,6 @@
     "url": "https://github.com/henriquerodrigues-dev/ecatalogos-forca-vendas-api/issues"
   },
   "homepage": "https://github.com/henriquerodrigues-dev/ecatalogos-forca-vendas-api#readme",
-  "description": "",
   "dependencies": {
     "@prisma/client": "^6.9.0",
     "cors": "^2.8.5",
@@ -25,6 +29,7 @@
     "prisma": "^6.9.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.29",
     "ts-node-dev": "^2.0.0",
