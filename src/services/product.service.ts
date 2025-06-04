@@ -1,15 +1,12 @@
 import prisma from '../database/prismaClient';
+import { getPaginationParams } from '../utils/pagination';
+import { capitalizeWords } from '../utils/capitalize';
 
 class ProductService {
-  /**
-   * Listar produtos ativos com filtros opcionais e paginação.
-   * Filtra produtos que não foram soft-deletados e que possuem variantes e SKUs com price_tables associados.
-   * @param query - Objeto com parâmetros: page, limit, search
-   */
   async list(query: any) {
     const { page = 1, limit = 10, search } = query;
+    const { skip, take } = getPaginationParams(page, limit);
 
-    // Filtro inicial (produtos ativos com variantes e SKUs com pelo menos uma price table)
     const where = {
       deleted_at: null,
       variants: {
@@ -29,11 +26,10 @@ class ProductService {
       })
     };
 
-    // Busca os produtos e suas variantes/relacionamentos
     const products = await prisma.products.findMany({
       where,
-      skip: (page - 1) * Number(limit),
-      take: Number(limit),
+      skip,
+      take,
       include: {
         brands: true,
         categories: true,
@@ -54,18 +50,14 @@ class ProductService {
       }
     });
 
-    // Aplica o filtro de variante: apenas aquelas com todos os SKUs vinculados à mesma tabela de preço
     const filteredProducts = products
       .map(product => {
         const filteredVariants = product.variants.filter(variant => {
           const skuTables = variant.skus.map(sku =>
             sku.price_tables_skus.map(pt => pt.price_table_id).sort()
           );
-
-          // Verifica se todas as listas de tabelas são iguais
           const first = JSON.stringify(skuTables[0]);
           const allSame = skuTables.every(tables => JSON.stringify(tables) === first);
-
           return allSame && skuTables[0]?.length > 0;
         });
 
@@ -79,10 +71,19 @@ class ProductService {
     return filteredProducts;
   }
 
-  /**
-   * Busca um produto ativo pelo ID, incluindo relacionamentos detalhados.
-   * @param id - ID do produto
-   */
+  async listDeleted(query: any) {
+    const { page = 1, limit = 10 } = query;
+    const { skip, take } = getPaginationParams(page, limit);
+
+    return prisma.products.findMany({
+      where: {
+        NOT: { deleted_at: null }
+      },
+      skip,
+      take
+    });
+  }
+
   async get(id: number) {
     if (!id) throw new Error('ID do produto é obrigatório');
 
@@ -107,14 +108,9 @@ class ProductService {
     });
   }
 
-  /**
-   * Cria um novo produto com suas variantes e SKUs associados.
-   * @param data - Dados do produto, incluindo variantes e SKUs
-   */
   async create(data: any) {
     const { variants, ...productData } = data;
 
-    // Cria o produto principal junto com suas variantes e SKUs aninhados
     const createdProduct = await prisma.products.create({
       data: {
         ...productData,
@@ -135,14 +131,7 @@ class ProductService {
     return createdProduct;
   }
 
-  /**
-   * Atualiza um produto existente.
-   * Para variantes e SKUs, a estratégia é apagar todas e recriar para simplificar.
-   * @param id - ID do produto
-   * @param data - Dados atualizados do produto
-   */
   async update(id: number, data: any) {
-    // Verifica se produto existe e não está deletado
     const productExists = await prisma.products.findFirst({
       where: { id, deleted_at: null }
     });
@@ -150,13 +139,11 @@ class ProductService {
 
     const { variants, ...productData } = data;
 
-    // Atualiza dados básicos do produto
     const updatedProduct = await prisma.products.update({
       where: { id },
       data: productData
     });
 
-    // Se houver variantes, apaga as antigas e cria as novas
     if (variants) {
       await prisma.variants.deleteMany({ where: { product_id: id } });
 
@@ -179,10 +166,6 @@ class ProductService {
     return updatedProduct;
   }
 
-  /**
-   * Realiza soft delete de um produto, setando deleted_at para a data atual.
-   * @param id - ID do produto
-   */
   async softDelete(id: number) {
     const productExists = await prisma.products.findFirst({
       where: { id, deleted_at: null }
@@ -196,36 +179,12 @@ class ProductService {
     return true;
   }
 
-  /**
-   * Lista produtos que foram soft deletados (deleted_at != null), com paginação.
-   * @param query - Parâmetros de paginação: page, limit
-   */
-  async listDeleted(query: any) {
-    const { page = 1, limit = 10 } = query;
-
-    return prisma.products.findMany({
-      where: {
-        NOT: { deleted_at: null }
-      },
-      skip: (page - 1) * Number(limit),
-      take: Number(limit)
-    });
-  }
-
-  /**
-   * Busca produto soft deletado pelo ID.
-   * @param id - ID do produto
-   */
   async getDeleted(id: number) {
     return prisma.products.findFirst({
       where: { id, NOT: { deleted_at: null } }
     });
   }
 
-  /**
-   * Conta o total de produtos ativos com filtros opcionais.
-   * @param query - Parâmetros opcionais de filtro, ex: search
-   */
   async count(query: any = {}) {
     const { search } = query;
 
@@ -246,25 +205,12 @@ class ProductService {
           { description: { contains: search, mode: 'insensitive' } }
         ]
       })
-    };''
+    };
 
     return prisma.products.count({ where });
   }
 
-  /**
-   * Busca dados para filtros com contadores para UI (ex: marcas, categorias, tipos).
-   * Usa queries SQL brutas para obter contagens e agrupamentos complexos.
-   */
   async filters() {
-    // Função para capitalizar cada palavra
-    function capitalizeWords(str: string) {
-      return str
-        .toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-    }
-
     const brandsRaw = await prisma.$queryRaw<any[]>`
       SELECT 
         b.id, 

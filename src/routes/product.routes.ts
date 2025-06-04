@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ProductController } from '../controllers/product.controller';
 import { validateDTO } from '../middlewares/validation.middleware';
-import { ProductDTO } from '../models/ProductDTO';
+import { ProductDTO } from '../models/productDTO';
 
 const router = Router();
 const productController = new ProductController();
