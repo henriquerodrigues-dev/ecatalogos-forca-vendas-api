@@ -24,6 +24,7 @@ Disponível diretamente no link da especificação acima.
 
 ---
 
+
 ## ✨ Funcionalidades Principais
 
 * 📝 **CRUD completo** para produtos e suas variantes/SKUs.
@@ -179,6 +180,13 @@ Você pode encontrar mais detalhes sobre os requisitos e escopo do desafio no se
 ├── tsconfig.json               # Configuração do TypeScript
 └── README.md                   # Este arquivo :)
 ```
+
+## 📸 Exemplo em execução
+
+Abaixo, uma captura de tela com o servidor rodando e a API funcionando:
+
+![Terminal rodando a API](./screenshots/terminal-running.png)
+![Postman rodando a API](./screenshots/postman-products.png)
 
 ## 🙋‍♂️ Autor
 
