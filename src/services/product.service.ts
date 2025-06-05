@@ -134,7 +134,7 @@ class ProductService {
         type: productData.type,
         gender: productData.gender,
         prompt_delivery: productData.prompt_delivery,
-        company_id,          // chave estrangeira obrigatória (deve existir no banco)
+        company_id,
         brand_id,
         category_id: productData.category_id,
         subcategory_id: productData.subcategory_id || null,
