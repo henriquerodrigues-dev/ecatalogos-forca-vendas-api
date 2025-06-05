@@ -1,6 +1,26 @@
 # 📦 eCatalogos Força de Vendas API 🚀
 
-API para gerenciamento de catálogo de produtos para força de vendas, com funcionalidades de CRUD, filtros e soft delete. Este projeto foi desenvolvido como um desafio para a empresa **e-Catalogos**.
+>API para gerenciamento de catálogo de produtos para força de vendas, com funcionalidades de CRUD, filtros e soft delete.  
+Este projeto foi desenvolvido como parte de um **desafio técnico para a vaga de Desenvolvedor Backend** na empresa **[e-Catalogos](https://e-catalogos.net/)**.
+
+📄 **Especificação completa do desafio:**  
+[https://plucky-ceramic-4d7.notion.site/](https://plucky-ceramic-4d7.notion.site/)
+
+>💾 **Dump do banco de dados (MySQL):**  
+Disponível diretamente no link da especificação acima.
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+- **Node.js**  
+  Plataforma leve e eficiente para construção de APIs REST, com alto desempenho em operações I/O.
+
+- **MySQL**  
+  Banco de dados relacional robusto e amplamente utilizado, ideal para estruturação clara e integridade dos dados.
+
+- **Prisma ORM**  
+  Abstração moderna para banco de dados, com tipagem forte, facilidade de migrações e integração fluida com TypeScript.
 
 ---
 
