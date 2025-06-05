@@ -43,7 +43,7 @@ export class ProductController {
       res.status(201).json(newProduct);
     } catch (error) {
       console.error('Erro ao criar produto:', error);
-      res.status(500).json({ message: 'Erro ao criar produto', error });
+      res.status(500).json({ message: 'Erro ao criar produto', error: error.message || 'Erro interno' });
     }
   }
 

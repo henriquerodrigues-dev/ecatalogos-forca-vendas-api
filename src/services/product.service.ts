@@ -54,7 +54,7 @@ class ProductService {
       }
     });
 
-    // Filtra variantes para garantir que todos os SKUs possuem price_tables_skus idênticos
+    // Filtra variantes garantindo SKUs com price_tables_skus consistentes
     const filteredProducts = products
       .map(product => {
         const filteredVariants = product.variants.filter(variant => {
@@ -111,23 +111,66 @@ class ProductService {
     });
   }
 
-  /** Cria produto com variantes e SKUs aninhados */
+  /**
+   * Cria um novo produto com suas variantes e SKUs.
+   * Atenção: company_id deve existir na tabela companies devido à restrição de chave estrangeira.
+   * Caso a empresa não exista, a operação falhará no banco.
+   */
   async create(data: any) {
-    const { variants, ...productData } = data;
+    const { variants = [], company_id, brand_id, ...productData } = data;
 
+    // Valida se company_id é um número válido e positivo
+    if (!company_id || typeof company_id !== 'number' || company_id <= 0) {
+      throw new Error('company_id inválido ou ausente. Deve existir na tabela companies.');
+    }
+
+    // Cria o produto no banco junto com variantes e SKUs em nested create
+    // OBS: Se company_id não existir na tabela companies, o banco irá retornar erro de FK
     return prisma.products.create({
       data: {
-        ...productData,
+        reference: productData.reference,
+        name: productData.name,
+        description: productData.description || null,
+        type: productData.type,
+        gender: productData.gender,
+        prompt_delivery: productData.prompt_delivery,
+        company_id,          // chave estrangeira obrigatória (deve existir no banco)
+        brand_id,
+        category_id: productData.category_id,
+        subcategory_id: productData.subcategory_id || null,
+        erp_id: productData.erp_id || null,
+        deadline_id: productData.deadline_id || null,
         variants: {
-          create: variants?.map((variant: any) => ({
+          create: variants.map((variant: any) => ({
             name: variant.name,
             hex_code: variant.hex_code,
             skus: {
-              create: variant.skus.map((sku: any) => ({ ...sku }))
-            }
-          })) || []
-        }
-      }
+              create: variant.skus.map((sku: any) => ({
+                size: sku.size,
+                stock: sku.stock,
+                price: sku.price,
+                code: sku.code,
+                min_quantity: sku.min_quantity || 1,
+                multiple_quantity: sku.multiple_quantity || 1,
+                erpId: sku.erpId || null,
+                cest: sku.cest || null,
+                ncm: sku.ncm || null,
+                height: sku.height || null,
+                length: sku.length || null,
+                weight: sku.weight || null,
+                width: sku.width || null,
+              })),
+            },
+          })),
+        },
+      },
+      include: {
+        variants: {
+          include: {
+            skus: true,
+          },
+        },
+      },
     });
   }
 
@@ -220,7 +263,6 @@ class ProductService {
    * - marcas, categorias (com subcategorias), tipos, gêneros e prompt_delivery
    */
   async filters() {
-    // Agrega marcas e contagem de produtos ativos
     const brandsRaw = await prisma.$queryRaw<any[]>`
       SELECT 
         b.id, 
@@ -230,13 +272,13 @@ class ProductService {
       LEFT JOIN products p ON b.id = p.brand_id AND p.deleted_at IS NULL
       GROUP BY b.id, b.name
     `;
+
     const brands = brandsRaw.map(b => ({
       id: b.id,
       name: capitalizeWords(b.name),
       quantity: Number(b.quantity)
     }));
 
-    // Agrega categorias e subcategorias com contagem de produtos ativos
     const rawCategories = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
         c.id,
@@ -278,7 +320,6 @@ class ProductService {
         : []
     }));
 
-    // Agrega tipos de produtos ativos
     const typesRaw = await prisma.products.groupBy({
       by: ['type'],
       where: { deleted_at: null },
@@ -289,7 +330,6 @@ class ProductService {
       quantity: Number(t._count._all)
     }));
 
-    // Agrega gêneros de produtos ativos
     const gendersRaw = await prisma.products.groupBy({
       by: ['gender'],
       where: { deleted_at: null },
@@ -300,7 +340,6 @@ class ProductService {
       quantity: Number(g._count._all)
     }));
 
-    // Contagem por prompt_delivery (true/false)
     const promptDelivery = {
       true: Number(await prisma.products.count({ where: { prompt_delivery: true, deleted_at: null } })),
       false: Number(await prisma.products.count({ where: { prompt_delivery: false, deleted_at: null } }))

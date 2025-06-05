@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /** Tipos possíveis de produto */
@@ -18,82 +18,128 @@ export enum ProductGender {
   OUTRO = 'OUTRO'
 }
 
-/** DTO para criação/atualização de SKU */
+/** DTO para criação de SKU */
 export class SKUCreateDTO {
   @IsOptional()
-  id?: number; // ID para atualização, opcional na criação
+  @IsNumber()
+  id?: number;
 
   @IsString()
   @IsNotEmpty()
-  size: string; // Tamanho (ex: P, M, G)
+  size: string;
 
   @IsNumber()
-  stock: number; // Quantidade em estoque
+  stock: number;
 
   @IsNumber()
-  price: number; // Preço
+  price: number;
 
   @IsString()
   @IsNotEmpty()
-  code: string; // Código único do SKU
+  code: string;
 
   @IsOptional()
   @IsNumber()
-  min_quantity?: number; // Quantidade mínima para compra (opcional)
+  min_quantity?: number;
 
   @IsNumber()
-  multiple_quantity: number; // Quantidade múltipla para compra
+  multiple_quantity: number;
+
+  // Campos opcionais adicionais
+  @IsOptional()
+  @IsString()
+  erpId?: string;
+
+  @IsOptional()
+  @IsString()
+  cest?: string;
+
+  @IsOptional()
+  @IsString()
+  ncm?: string;
+
+  @IsOptional()
+  @IsNumber()
+  height?: number;
+
+  @IsOptional()
+  @IsNumber()
+  length?: number;
+
+  @IsOptional()
+  @IsNumber()
+  weight?: number;
+
+  @IsOptional()
+  @IsNumber()
+  width?: number;
 }
 
-/** DTO para variantes do produto (ex: cores, estilos) */
+/** DTO para variantes do produto */
 export class VariantDTO {
   @IsOptional()
-  id?: number; // ID para atualização, opcional
+  @IsNumber()
+  id?: number;
 
   @IsString()
   @IsNotEmpty()
-  name: string; // Nome da variante
+  name: string;
 
   @IsOptional()
-  hex_code?: string; // Código hexadecimal da cor (opcional)
+  @IsString()
+  hex_code?: string;
 
   @ValidateNested({ each: true })
   @Type(() => SKUCreateDTO)
-  skus: SKUCreateDTO[]; // Lista de SKUs da variante
+  skus: SKUCreateDTO[];
 }
 
-/** DTO principal para criação/atualização de produto */
+/** DTO principal para criação de produto */
 export class ProductDTO {
   @IsString()
   @IsNotEmpty()
-  name: string; // Nome do produto
+  name: string;
 
   @IsString()
   @IsNotEmpty()
-  reference: string; // Referência interna ou SKU global
+  reference: string;
 
   @IsEnum(ProductType)
-  type: ProductType; // Tipo do produto
+  type: ProductType;
 
   @IsEnum(ProductGender)
-  gender: ProductGender; // Gênero do produto
+  gender: ProductGender;
 
-  @IsNotEmpty()
-  prompt_delivery: boolean; // Indica entrega rápida
-
-  @IsNumber()
-  company_id: number; // Empresa dona do produto
-
-  @IsNumber()
-  brand_id: number; // Marca do produto
-
-  @IsNumber()
-  category_id: number; // Categoria
+  @IsBoolean()
+  prompt_delivery: boolean;
 
   @IsOptional()
-  subcategory_id?: number; // Subcategoria (opcional)
+  @IsNumber()
+  company_id?: number;
+
+  @IsOptional()
+  @IsString()
+  erp_id?: string;
+
+  @IsOptional()
+  @IsNumber()
+  deadline_id?: number;
+
+  @IsNumber()
+  brand_id: number;
+
+  @IsNumber()
+  category_id: number;
+
+  @IsOptional()
+  @IsNumber()
+  subcategory_id?: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @ValidateNested({ each: true })
   @Type(() => VariantDTO)
-  variants: VariantDTO[]; // Variantes do produto
+  variants: VariantDTO[];
 }
